@@ -1,28 +1,28 @@
+from statics import *
+
 from cfg import TOKEN
+from cog_images import IonImages
+from discord.ext.commands import Bot
 from aiohttp.client_exceptions import ClientConnectorError
-from statics import error_messages
+
 import discord
 
 
-class Ionify(discord.Client):
+class Ionify(Bot):
     async def on_ready(self):
         print("Logged in as {0}!".format(self.user))
-
-    async def on_message(self, message):
-        print('Message from {0.author}: {0.content}'.format(message))
-
+        await self.change_presence(status = discord.Status.offline)
 
 def main():
-    client = Ionify()
+    print("Loading...")
+    client = Ionify("!", self_bot = False)
+    client.add_cog(IonImages(client))
     try:
         client.run(TOKEN)
     except TimeoutError:
-        print("No connection to Discord. Check network. " + \
-              "If on windows, try bypass.")
+        print(ERROR_NO_CONN)
     except ClientConnectorError:
-        print("No connection to Discord. Check network. " + \
-              "If on windows, try bypass.")
-        
+        print(ERROR_NO_CONN)
 
 if __name__ == '__main__':
     main()
