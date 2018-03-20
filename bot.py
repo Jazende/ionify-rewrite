@@ -12,6 +12,12 @@ import discord
 import create_db
 import sqlalchemy
 
+def check_database():
+    if not os.path.isfile(db_loc):
+        engine = sqlalchemy.create_engine(db_loc)
+        create_db.create_all_tables(engine)
+
+
 class Ionify(discord.Client):
     def __init__(self):
         super().__init__()
@@ -22,8 +28,6 @@ class Ionify(discord.Client):
 
     async def on_ready(self):
         print("Logged in as {0}!".format(self.user))
-        if not os.path.isfile(db_loc):
-            await create_db.create_all_tables(self.engine)
         if self.JAZ_DEBUG:
             await self.change_presence(status = discord.Status.offline)
 
@@ -89,7 +93,7 @@ class Ionify(discord.Client):
                     await chl.send(file=discord.File(image_obj.file_loc))
                 else:
                     await message.channel.send(file=discord.File(image_obj.file_loc))
-                image_obj.used = image_obj.used + 1
+                image_obj.set_used(self.engine, image_obj.used + 1) 
 
 
     async def song_random(self, message):
@@ -184,14 +188,11 @@ class Ionify(discord.Client):
         self.image_list = []
         with database_connection(self.engine) as db_c:
             for image in db_c.execute(sqlalchemy.sql.select([images])):
-                imgdata = ImagesData(id_ = image['id'],
-                                     added = image['added'],
-                                     file_loc = image['file_loc'],
-                                     invoke = image['invoke'])
-                imgdata.used = image['used']
-                self.image_list.append(imgdata)
-        print(self.image_list[0].used)
-
+                #imgdata = ImagesData(id_ = image['id'],
+                self.image_list.append(ImagesData(id_ = image['id'], added = image['added'],
+                                                  file_loc = image['file_loc'], used = image['used'], 
+                                                  invoke = image['invoke']))
+               # self.image_list.append(imgdata)
 
 def main():
     print("Loading...")
@@ -203,4 +204,5 @@ def main():
         print(ERROR_NO_CONN)
 
 if __name__ == '__main__':
+    check_database()
     main()
