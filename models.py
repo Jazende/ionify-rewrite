@@ -11,7 +11,7 @@ songs = Table('songs', metadata,
               Column('artist', String),
               Column('name', String),
               Column('added', DateTime),
-              Column('played', Integer),
+              Column('used', Integer),
               Column('skipped', Integer),
               Column('shuffled', Integer),
               )
@@ -22,3 +22,11 @@ log = Table('log', metadata,
             Column('author', String),
             Column('timestamp', DateTime),
             )
+
+images = Table('images', metadata,
+               Column('id', Integer, primary_key=True),
+               Column('invoke', String, unique=True),
+               Column('file_loc', String),
+               Column('added', DateTime),
+               Column('used', Integer),
+               )
