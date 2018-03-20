@@ -1,15 +1,6 @@
-# with database_connection(engine) as db_c:
-#     song_insert = songs.insert().values(invoke=" ", file_loc=" ")
-#     db_c.execute(song_insert)
-
-# ins_song = songs.insert()
-# ins_song.compile()
-# with database_connection(engine) as db_c:
-#     conn.execute(ins_song, name=" ", file_loc=" ")
-
-
 from models import *
 from statics import *
+from dataclasses import *
 
 from cfg import TOKEN, db_loc
 from utils import load_opus_library, database_connection
@@ -25,26 +16,28 @@ class Ionify(discord.Client):
     def __init__(self):
         super().__init__()
         self.engine = sqlalchemy.create_engine(db_loc)
+        self.sql_select_all_songs = sqlalchemy.sql.select([songs])
+        self.image_list = []
+        self.populate_image_list()
 
     async def on_ready(self):
         print("Logged in as {0}!".format(self.user))
-        print("Checking DB...")
         if not os.path.isfile(db_loc):
-            print("Creating DB...")
             await create_db.create_all_tables(self.engine)
         if self.JAZ_DEBUG:
-            print("Setting offline")
             await self.change_presence(status = discord.Status.offline)
-        print("Ready")
 
     async def on_message(self, message):
         if message.content.startswith("!"):
+            
+            # logging all commands #
             print(PRINT_MESSAGE.format(message))
+            log_ins = log.insert().values(author = str(message.author),
+                                          message = str(message.content),
+                                          timestamp = datetime.utcnow())
             with database_connection(self.engine) as db_c:
-                log_ins = log.insert().values(author = str(message.author),
-                                              message = str(message.content),
-                                              timestamp = datetime.utcnow())
                 db_c.execute(log_ins)
+            
             if message.content.startswith("!song random"):
                 await self.song_random(message)
             elif message.content.startswith("!song playing"):
@@ -71,8 +64,6 @@ class Ionify(discord.Client):
                 await self.song_list_update(message)
             elif message.content.startswith("!song list"):
                 await self.song_list(message)
-            elif message.content.startswith("!image list"):
-                await self.image_list(message)
             elif message.content.startswith("!image add"):      # <name> <link>
                 await self.image_add(message)
             elif message.content.startswith("!INSTANT CIRCUS"):
@@ -91,8 +82,14 @@ class Ionify(discord.Client):
                 await self.monika_commands(message)
             elif message.content.startswith("!song "):
                 await self.play_song(message)
-        #for match in imagelist:
-        #    print("Match image")
+        for image_obj in self.image_list:
+            if image_obj.match.match(str(message.content).lower()):
+                if self.JAZ_DEBUG:
+                    chl = message.channel.guild.get_channel(CHANNEL_TEST)
+                    await chl.send(file=discord.File(image_obj.file_loc))
+                else:
+                    await message.channel.send(file=discord.File(image_obj.file_loc))
+
 
     async def song_random(self, message):
         print("Play random song")
@@ -146,10 +143,6 @@ class Ionify(discord.Client):
         print("!song list update")
         pass
     
-    async def image_list(self, message):
-        print("!image list")
-        pass
-    
     async def image_add(self, message):
         print("!image add <name> <link>")
         pass
@@ -185,6 +178,17 @@ class Ionify(discord.Client):
     async def play_song(self, message):
         print("!play_song")
         pass
+
+    def populate_image_list(self):
+        self.image_list = []
+        with database_connection(self.engine) as db_c:
+            for image in db_c.execute(sqlalchemy.sql.select([images])):
+                self.image_list.append(ImagesData(id_ = image['id'],
+                                                  added = image['added'],
+                                                  file_loc = image['file_loc'],
+                                                  invoke = image['invoke'],
+                                                  used = image['used']))
+
 
 def main():
     print("Loading...")
