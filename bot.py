@@ -1,19 +1,40 @@
+from models import *
 from statics import *
 
-from cfg import TOKEN
+from cfg import TOKEN, db_loc
+from utils import load_opus_library, database_connection
 from aiohttp.client_exceptions import ClientConnectorError
 
+import os
+import asyncio
 import discord
+import create_db
+import sqlalchemy
 
 class Ionify(discord.Client):
+    def __init__(self):
+        super().__init__()
+        self.engine = sqlalchemy.create_engine(db_loc)
+
     async def on_ready(self):
         print("Logged in as {0}!".format(self.user))
+        print("Checking DB...")
+        if not os.path.isfile(db_loc):
+            print("Creating DB...")
+            await create_db.create_all_tables(self.engine)
         if self.JAZ_DEBUG:
+            print("Setting offline")
             await self.change_presence(status = discord.Status.offline)
+        print("Ready")
 
     async def on_message(self, message):
         if message.content.startswith("!"):
             print(PRINT_MESSAGE.format(message))
+            with database_connection(self.engine) as db_c:
+                log_ins = log.insert().values(author = str(message.author),
+                                              message = str(message.content),
+                                              timestamp = datetime.utcnow())
+                db_c.execute(log_ins)
             if message.content.startswith("!song random"):
                 await self.song_random(message)
             elif message.content.startswith("!song playing"):
@@ -60,8 +81,8 @@ class Ionify(discord.Client):
                 await self.monika_commands(message)
             elif message.content.startswith("!song "):
                 await self.play_song(message)
-        for match in imagelist:
-            print("Match image")
+        #for match in imagelist:
+        #    print("Match image")
 
     async def song_random(self, message):
         print("Play random song")
@@ -154,7 +175,6 @@ class Ionify(discord.Client):
     async def play_song(self, message):
         print("!play_song")
         pass
-
 
 def main():
     print("Loading...")
