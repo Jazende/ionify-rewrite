@@ -3,7 +3,7 @@ from statics import *
 from dataclasses import *
 
 from cfg import TOKEN, db_loc
-from utils import load_opus_library, database_connection
+from utils import load_opus_library, database_connection, CHANNEL_TEST
 from aiohttp.client_exceptions import ClientConnectorError
 
 import os
@@ -89,6 +89,7 @@ class Ionify(discord.Client):
                     await chl.send(file=discord.File(image_obj.file_loc))
                 else:
                     await message.channel.send(file=discord.File(image_obj.file_loc))
+                image_obj.used = image_obj.used + 1
 
 
     async def song_random(self, message):
@@ -183,11 +184,13 @@ class Ionify(discord.Client):
         self.image_list = []
         with database_connection(self.engine) as db_c:
             for image in db_c.execute(sqlalchemy.sql.select([images])):
-                self.image_list.append(ImagesData(id_ = image['id'],
-                                                  added = image['added'],
-                                                  file_loc = image['file_loc'],
-                                                  invoke = image['invoke'],
-                                                  used = image['used']))
+                imgdata = ImagesData(id_ = image['id'],
+                                     added = image['added'],
+                                     file_loc = image['file_loc'],
+                                     invoke = image['invoke'])
+                imgdata.used = image['used']
+                self.image_list.append(imgdata)
+        print(self.image_list[0].used)
 
 
 def main():

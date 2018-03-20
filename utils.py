@@ -5,6 +5,8 @@ from discord import opus
 from ctypes.util import find_library
 from contextlib import contextmanager
 
+CHANNEL_TEST = 383215871860015105
+
 @contextmanager
 def database_connection(engine):
     conn = engine.connect()
