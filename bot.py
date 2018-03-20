@@ -1,10 +1,11 @@
-# ins_song = songs.insert().values(name="ion radio", file_loc="ion_radio.mp4")
-# ins_song.compile.params
-# conn.execute(ins_song, name=" ", file_loc=" ")
-
 # with database_connection(engine) as db_c:
 #     song_insert = songs.insert().values(invoke=" ", file_loc=" ")
 #     db_c.execute(song_insert)
+
+# ins_song = songs.insert()
+# ins_song.compile()
+# with database_connection(engine) as db_c:
+#     conn.execute(ins_song, name=" ", file_loc=" ")
 
 
 from models import *
