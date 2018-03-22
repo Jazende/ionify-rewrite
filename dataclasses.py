@@ -1,4 +1,4 @@
-from utils import compiled_image_regex, database_connection
+from utils import regex_compile_image_invoke, database_connection
 from models import images
 from sqlalchemy import update
 
@@ -18,16 +18,22 @@ class SongsData:
 
 
 class ImagesData:
-    def __init__(self, added, file_loc, id_, invoke, used):
+    def __init__(self, added, file_loc, invoke, used, id_=None):
         self.added = added
         self.file_loc = file_loc
         self.id_ = id_
         self.invoke = invoke
         self.used = used
-        self.match = compiled_image_regex(invoke)
+        self.match = regex_compile_image_invoke(invoke)
 
-    def set_used(self, engine, new_used):
+    def db_update(self, engine, new_used):
         sql_stmt = update(images).where(images.c.id == self.id_).values(used=new_used)
+        with database_connection(engine) as db_c:
+            db_c.execute(sql_stmt)
+
+    def db_insert(self, engine):
+        sql_stmt = images.insert().values(added=self.added, invoke=self.invoke,
+                                          used=self.used, file_loc=self.file_loc)
         with database_connection(engine) as db_c:
             db_c.execute(sql_stmt)
 

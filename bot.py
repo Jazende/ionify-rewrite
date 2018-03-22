@@ -3,10 +3,13 @@ from statics import *
 from dataclasses import *
 
 from cfg import TOKEN, db_loc
-from utils import load_opus_library, database_connection, CHANNEL_TEST
+from utils import database_connection, CHANNEL_TEST
+from utils import REGEX_MATCH_IMAGE_ADD, regex_findall
+from utils import async_download_picture
+# from utils import load_opus_library
 
 import os
-import asyncio
+# import asyncio
 import discord
 import create_db
 import sqlalchemy
@@ -19,82 +22,85 @@ def check_database():
 
 
 class Ionify(discord.Client):
-    def __init__(self):
+    def __init__(self, jaz_debug=False):
         super().__init__()
         self.engine = sqlalchemy.create_engine(db_loc)
         self.sql_select_all_songs = sqlalchemy.sql.select([songs])
         self.image_list = []
         self.populate_image_list()
+        self.jaz_debug = jaz_debug
 
     async def on_ready(self):
         print("Logged in as {0}!".format(self.user))
-        if self.JAZ_DEBUG:
-            await self.change_presence(status = discord.Status.offline)
+        if self.jaz_debug:
+            await self.change_presence(status=discord.Status.offline)
 
     async def on_message(self, message):
         if message.content.startswith("!"):
             
             # logging all commands
-            print(PRINT_MESSAGE.format(message))
-            log_ins = log.insert().values(author = str(message.author),
-                                          message = str(message.content),
-                                          timestamp = datetime.utcnow())
-            with database_connection(self.engine) as db_c:
-                db_c.execute(log_ins)
+            if self.jaz_debug:
+                print(PRINT_MESSAGE.format(message))
+                log_ins = log.insert().values(author=str(message.author),
+                                              message=str(message.content),
+                                              timestamp=datetime.utcnow())
+
+                with database_connection(self.engine) as db_c:
+                    db_c.execute(log_ins)
             
-            if message.content.startswith("!song random"):
+            if message.content.startswith("!song random"):          # TODO
                 await self.song_random(message)
-            elif message.content.startswith("!song playing"):
+            elif message.content.startswith("!song playing"):          # TODO
                 await self.song_playing(message)
-            elif message.content.startswith("!song shuffle start"):
+            elif message.content.startswith("!song shuffle start"):          # TODO
                 await self.song_shuffle_start(message)
-            elif message.content.startswith("!song shuffle stop"):
+            elif message.content.startswith("!song shuffle stop"):          # TODO
                 await self.song_shuffle_stop(message)
-            elif message.content.startswith("!song skip"):
+            elif message.content.startswith("!song skip"):          # TODO
                 await self.song_skip(message)
-            elif message.content.startswith("!song stop"):
+            elif message.content.startswith("!song stop"):          # TODO
                 await self.song_stop(message)
-            elif message.content.startswith("!song pause"):
+            elif message.content.startswith("!song pause"):          # TODO
                 await self.song_pause(message)
-            elif message.content.startswith("!song resume"):
+            elif message.content.startswith("!song resume"):          # TODO
                 await self.song_resume(message)
-            elif message.content.startswith("!song volume"):
+            elif message.content.startswith("!song volume"):          # TODO
                 await self.song_volume(message)
-            elif message.content.startswith("!song add"):       # <name> <link>
+            elif message.content.startswith("!song add"):       # <name> <link>          # TODO
                 await self.song_add(message)
-            elif message.content.startswith("!song queue"):
+            elif message.content.startswith("!song queue"):          # TODO
                 await self.song_queue(message)
-            elif message.content.startswith("!song list update"):
+            elif message.content.startswith("!song list update"):          # TODO
                 await self.song_list_update(message)
-            elif message.content.startswith("!song list"):
+            elif message.content.startswith("!song list"):          # TODO
                 await self.song_list(message)
             elif message.content.startswith("!image add"):      # <name> <link>
                 await self.image_add(message)
-            elif message.content.startswith("!INSTANT CIRCUS"):
+            elif message.content.startswith("!INSTANT CIRCUS"):          # TODO
                 await self.INSTANT_CIRCUS(message)
-            elif message.content.startswith("!INSTANT STOP"):
+            elif message.content.startswith("!INSTANT STOP"):          # TODO
                 await self.INSTANT_STOP(message)
-            elif message.content.startswith("!monika text"):    # <text>
+            elif message.content.startswith("!monika text"):    # <text>          # TODO
                 await self.monika_text(message)
-            elif message.content.startswith("!monika online"):
+            elif message.content.startswith("!monika online"):          # TODO
                 await self.monika_online(message)
-            elif message.content.startswith("!monika offline"):
+            elif message.content.startswith("!monika offline"):          # TODO
                 await self.monika_offline(message)
-            elif message.content.startswith("!monika playing"):
+            elif message.content.startswith("!monika playing"):          # TODO
                 await self.monika_playing(message)
-            elif message.content.startswith("!monika commands"):
+            elif message.content.startswith("!monika commands"):          # TODO
                 await self.monika_commands(message)
-            elif message.content.startswith("!song "):
+            elif message.content.startswith("!song "):          # TODO
                 await self.play_song(message)
-        for image_obj in self.image_list:
-            if image_obj.match.match(str(message.content).lower()):
-                if self.JAZ_DEBUG:
-                    chl = message.channel.guild.get_channel(CHANNEL_TEST)
-                    await chl.send(file=discord.File(image_obj.file_loc))
-                else:
-                    await message.channel.send(file=discord.File(image_obj.file_loc))
-                image_obj.set_used(self.engine, image_obj.used + 1) 
-
+        else:
+            for image_obj in self.image_list:
+                if image_obj.match.match(str(message.content).lower()):
+                    if self.jaz_debug:
+                        chl = message.channel.guild.get_channel(CHANNEL_TEST)
+                        await chl.send(file=discord.File(image_obj.file_loc))
+                    else:
+                        await message.channel.send(file=discord.File(image_obj.file_loc))
+                    image_obj.db_update(self.engine, image_obj.used + 1)
 
     async def song_random(self, message):
         print("Play random song")
@@ -149,8 +155,23 @@ class Ionify(discord.Client):
         pass
     
     async def image_add(self, message):
-        print("!image add <name> <link>")
-        pass
+        if self.jaz_debug:
+            print("!image add <name> <link>")
+        matches = regex_findall(REGEX_MATCH_IMAGE_ADD, str(message.content))
+        if len(matches) > 0:
+            if matches[0] in [x.invoke for x in self.image_list]:
+                await message.channel.send("Name already exists. Please pick another.")
+            else:
+                name, link = matches[0]
+                result, pic_name, pic_url = await async_download_picture(name, link)
+                if result[0]:
+                    new_image = ImagesData(added=datetime.utcnow(), used=0,
+                                           file_loc=pic_url, invoke=pic_name)
+                    self.image_list.append(new_image)
+                    new_image.db_insert(self.engine)
+                else:
+                    await message.channel.send("Something went wrong downloading the file {}".format(name))
+
     
     async def INSTANT_CIRCUS(self, message):
         print("!INSTANT CIRCUS")
@@ -195,8 +216,7 @@ class Ionify(discord.Client):
 
 def main():
     print("Loading...")
-    client = Ionify()
-    client.JAZ_DEBUG = True
+    client = Ionify(jaz_debug=True)
     try:
         client.run(TOKEN)
     except TimeoutError:
