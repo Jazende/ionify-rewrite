@@ -3,13 +3,22 @@ import re
 import aiohttp
 
 from discord import opus
+from discord import FFmpegPCMAudio
 from statics import BOT_FOLDER_IMAGES
+from discord import PCMVolumeTransformer
 from contextlib import contextmanager
 from ctypes.util import find_library
 
 CHANNEL_TEST = 383215871860015105
 REGEX_MATCH_IMAGE_ADD = re.compile("!image add \"(\S[a-zA-Z0-9_]*?\S)\" \"(.*?)\"")
 REGEX_FIND_IMAGE_EXT = re.compile(".*\w+/.+\.([\w\d]{1,5})\??.*")
+
+
+def vol_audio_source(song):
+    as_ = FFmpegPCMAudio(song.file_loc)
+    vas = PCMVolumeTransformer(as_)
+    vas.volume = song.volume
+    return vas
 
 
 def regex_match(regex, input_):
@@ -57,3 +66,16 @@ async def async_download_picture(name, link):
                 f.write(await resp.read())
         await session.close()
     return True, picture_name, picture_url
+
+import sqlalchemy
+from cfg import db_loc
+from models import songs
+
+def show_songs():
+    engine = sqlalchemy.create_engine(db_loc)
+    with database_connection(engine) as dbc:
+        res = dbc.execute(sqlalchemy.select([songs]))
+        result = []
+        for x in res:
+            result.append(x)
+    return result

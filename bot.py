@@ -7,17 +7,13 @@ from utils import database_connection, CHANNEL_TEST
 from utils import REGEX_MATCH_IMAGE_ADD, regex_findall
 from utils import async_download_picture
 from utils import load_opus_library
+from utils import vol_audio_source
 from datetime import datetime
 
 import os
 import discord
 import create_db
 import sqlalchemy
-
-
-# TODO : Temporary, verwijderen
-def vol(song_location):
-    return discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(song_location))
 
 
 def check_database():
@@ -230,8 +226,7 @@ class Ionify(discord.Client):
         if self.voice_capable:
             for song in self.song_list:
                 if message.content.startswith("!song {}".format(song.invoke)):
-                    audiosource = vol(song.file_loc)
-                    self.vc.play(audiosource, after=lambda e: print("done", e))
+                    self.vc.play(vol_audio_source(song.file_loc), after=lambda e: print("done", e))
         print("!play_song")
         pass
 
@@ -251,7 +246,7 @@ class Ionify(discord.Client):
                                                 file_loc=song['file_loc'], artist=song['artist'],
                                                 name=song['name'], added=song['added'],
                                                 used=song['used'], skipped=song['skipped'],
-                                                shuffled=song['shuffled']))
+                                                shuffled=song['shuffled'], volume=['volume']))
 
 
 def main():

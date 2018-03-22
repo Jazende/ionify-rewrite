@@ -1,5 +1,5 @@
-from sqlalchemy import Table, Column, Integer, String
-from sqlalchemy import MetaData, DateTime
+from sqlalchemy import Table, Column, MetaData
+from sqlalchemy import Integer, String, Float, DateTime
 
 metadata = MetaData()
 
@@ -13,7 +13,7 @@ songs = Table('songs', metadata,
               Column('used', Integer),
               Column('skipped', Integer),
               Column('shuffled', Integer),
-              # ToDo: Add Default Volume
+              Column('volume', Float),
               )
 
 log = Table('log', metadata,

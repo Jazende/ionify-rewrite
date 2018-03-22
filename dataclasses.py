@@ -5,17 +5,20 @@ from sqlalchemy import update
 
 class SongsData:
     def __init__(self, artist, added, file_loc, id_, invoke, name,
-                 skipped=0, shuffled=0, used=0):
-        self.artist = artist
+                 volume=1.0, skipped=0, shuffled=0, used=0):
+        self.artist = artist        # ex: Taylor Swift
         self.added = added
-        self.file_loc = file_loc
+        self.file_loc = file_loc    # ex: /home/python/ionify-rewrite/songs/taytay_22.mp3
         self.id_ = id_
-        self.invoke = invoke
-        self.name = name
+        self.invoke = invoke        # ex: taytay 22
+        self.name = name            # ex: 22
         self.skipped = skipped
         self.shuffled = shuffled
         self.used = used
+        self.volume = volume
 
+    def __repr__(self):
+        return "Song: {}".format(self.name)
 
 class ImagesData:
     def __init__(self, added, file_loc, invoke, used, id_=None):
