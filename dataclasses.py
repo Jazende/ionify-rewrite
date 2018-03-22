@@ -20,6 +20,7 @@ class SongsData:
     def __repr__(self):
         return "Song: {}".format(self.name)
 
+
 class ImagesData:
     def __init__(self, added, file_loc, invoke, used, id_=None):
         self.added = added

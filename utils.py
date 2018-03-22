@@ -66,16 +66,3 @@ async def async_download_picture(name, link):
                 f.write(await resp.read())
         await session.close()
     return True, picture_name, picture_url
-
-import sqlalchemy
-from cfg import db_loc
-from models import songs
-
-def show_songs():
-    engine = sqlalchemy.create_engine(db_loc)
-    with database_connection(engine) as dbc:
-        res = dbc.execute(sqlalchemy.select([songs]))
-        result = []
-        for x in res:
-            result.append(x)
-    return result
