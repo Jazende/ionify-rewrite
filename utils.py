@@ -4,6 +4,7 @@ import aiohttp
 
 from discord import opus
 from discord import FFmpegPCMAudio
+from statics import BOT_FOLDER_SONGS
 from statics import BOT_FOLDER_IMAGES
 from discord import PCMVolumeTransformer
 from contextlib import contextmanager
@@ -15,7 +16,8 @@ REGEX_FIND_IMAGE_EXT = re.compile(".*\w+/.+\.([\w\d]{1,5})\??.*")
 
 
 def vol_audio_source(song):
-    as_ = FFmpegPCMAudio(song.file_loc)
+    loc = os.path.join(BOT_FOLDER_SONGS, song.file_loc)
+    as_ = FFmpegPCMAudio(loc)
     vas = PCMVolumeTransformer(as_)
     vas.volume = song.volume
     return vas

@@ -226,7 +226,7 @@ class Ionify(discord.Client):
         if self.voice_capable:
             for song in self.song_list:
                 if message.content.startswith("!song {}".format(song.invoke)):
-                    self.vc.play(vol_audio_source(song.file_loc), after=lambda e: print("done", e))
+                    self.vc.play(vol_audio_source(song), after=lambda e: print("done", e))
         print("!play_song")
         pass
 
@@ -246,7 +246,7 @@ class Ionify(discord.Client):
                                                 file_loc=song['file_loc'], artist=song['artist'],
                                                 name=song['name'], added=song['added'],
                                                 used=song['used'], skipped=song['skipped'],
-                                                shuffled=song['shuffled'], volume=['volume']))
+                                                shuffled=song['shuffled'], volume=song['volume']))
 
 
 def main():
