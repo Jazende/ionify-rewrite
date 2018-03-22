@@ -86,7 +86,7 @@ class Ionify(discord.Client):
             elif message.content.startswith("!song list update"):          # TODO
                 await self.song_list_update(message)
             elif message.content.startswith("!song list"):          # TODO
-                await self.song_list(message)
+                await self.songs_list(message)
             elif message.content.startswith("!image add"):      # <name> <link>
                 await self.image_add(message)
             elif message.content.startswith("!INSTANT CIRCUS"):          # TODO
@@ -168,7 +168,7 @@ class Ionify(discord.Client):
         print("!song queue")
         pass
     
-    async def song_list(self, message):
+    async def songs_list(self, message):
         print("!song list")
         pass
     
