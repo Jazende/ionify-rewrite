@@ -4,13 +4,13 @@ from dataclasses import *
 
 from cfg import TOKEN, db_loc
 from utils import load_opus_library, database_connection, CHANNEL_TEST
-from aiohttp.client_exceptions import ClientConnectorError
 
 import os
 import asyncio
 import discord
 import create_db
 import sqlalchemy
+
 
 def check_database():
     if not os.path.isfile(db_loc):
@@ -34,7 +34,7 @@ class Ionify(discord.Client):
     async def on_message(self, message):
         if message.content.startswith("!"):
             
-            # logging all commands #
+            # logging all commands
             print(PRINT_MESSAGE.format(message))
             log_ins = log.insert().values(author = str(message.author),
                                           message = str(message.content),
@@ -188,11 +188,10 @@ class Ionify(discord.Client):
         self.image_list = []
         with database_connection(self.engine) as db_c:
             for image in db_c.execute(sqlalchemy.sql.select([images])):
-                #imgdata = ImagesData(id_ = image['id'],
-                self.image_list.append(ImagesData(id_ = image['id'], added = image['added'],
-                                                  file_loc = image['file_loc'], used = image['used'], 
-                                                  invoke = image['invoke']))
-               # self.image_list.append(imgdata)
+                self.image_list.append(ImagesData(id_=image['id'], added=image['added'],
+                                                  file_loc=image['file_loc'], used=image['used'],
+                                                  invoke=image['invoke']))
+
 
 def main():
     print("Loading...")

@@ -1,6 +1,5 @@
-from datetime import datetime
-from sqlalchemy import (Table, Column, Integer, String, DateTime,
-                        MetaData, ForeignKey)
+from sqlalchemy import Table, Column, Integer, String
+from sqlalchemy import MetaData, DateTime
 
 metadata = MetaData()
 

@@ -1,6 +1,5 @@
-from cfg import db_loc
 from utils import compiled_image_regex, database_connection
-from models import *
+from models import images
 from sqlalchemy import update
 
 
@@ -17,6 +16,7 @@ class SongsData:
         self.shuffled = shuffled
         self.used = used
 
+
 class ImagesData:
     def __init__(self, added, file_loc, id_, invoke, used):
         self.added = added
@@ -31,12 +31,11 @@ class ImagesData:
         with database_connection(engine) as db_c:
             db_c.execute(sql_stmt)
 
-
     def __repr__(self):
         return "({0.id_}, {0.invoke}, {0.used})".format(self)
 
 if __name__ == '__main__':
     from datetime import datetime
-    a = ImagesData(id_ = 1, added = datetime.utcnow(), file_loc = "",
-                   used = 10, invoke = "a")
+    a = ImagesData(id_=1, added=datetime.utcnow(), file_loc="",
+                   used=10, invoke="a")
     print(a)
