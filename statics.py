@@ -5,6 +5,7 @@ ERROR_NO_CONN = "No connection to Discord. Check network. If on windows, try byp
 PRINT_MESSAGE = 'Message from {0.author} in channel {0.channel}: {0.content}'
 
 CHANNEL_TEST = 383215871860015105
+CHANNEL_VOICE = 390557208946933765
 CHANNEL_OFFTOPIC = 294536565240233994
 
 BOT_FOLDER_IMAGES = os.path.join(BOT_FOLDER, "images")

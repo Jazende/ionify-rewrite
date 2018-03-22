@@ -6,7 +6,8 @@ from cfg import TOKEN, db_loc
 from utils import database_connection, CHANNEL_TEST
 from utils import REGEX_MATCH_IMAGE_ADD, regex_findall
 from utils import async_download_picture
-# from utils import load_opus_library
+from utils import load_opus_library
+from datetime import datetime
 
 import os
 import discord
@@ -28,11 +29,18 @@ class Ionify(discord.Client):
         self.image_list = []
         self.populate_image_list()
         self.jaz_debug = jaz_debug
+        self.vc = None
+        load_opus_library()
 
     async def on_ready(self):
         print("Logged in as {0}!".format(self.user))
         if self.jaz_debug:
             await self.change_presence(status=discord.Status.offline)
+        voice_channel = self.get_channel(CHANNEL_VOICE)
+        if isinstance(voice_channel, discord.VoiceChannel):
+            self.vc = await self.get_channel(CHANNEL_VOICE).connect()
+        else:
+            raise ValueError("CHANNEL_VOICE is not a VoiceChannel")
 
     async def on_message(self, message):
         if message.content.startswith("!"):
@@ -91,6 +99,8 @@ class Ionify(discord.Client):
                 await self.monika_commands(message)
             elif message.content.startswith("!song "):          # TODO
                 await self.play_song(message)
+            elif message.content.startswith("!test"):              # todo remove when complete
+                await self.test_functionality(message)
         else:
             for image_obj in self.image_list:
                 if image_obj.match.match(str(message.content).lower()):
@@ -100,6 +110,10 @@ class Ionify(discord.Client):
                     else:
                         await message.channel.send(file=discord.File(image_obj.file_loc))
                     image_obj.db_update(self.engine, image_obj.used + 1)
+
+    async def test_functionality(self, message):
+        song = os.path.join(BOT_FOLDER_SONGS, 'aqua_barbie_girl.mp3')
+        self.vc.play(discord.FFmpegPCMAudio(song), after=lambda e: print('done', e))
 
     async def song_random(self, message):
         print("Play random song")
