@@ -9,7 +9,6 @@ from utils import async_download_picture
 # from utils import load_opus_library
 
 import os
-# import asyncio
 import discord
 import create_db
 import sqlalchemy
