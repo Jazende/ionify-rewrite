@@ -19,7 +19,7 @@ def vol_audio_source(song):
     loc = os.path.join(BOT_FOLDER_SONGS, song.file_loc)
     as_ = FFmpegPCMAudio(loc)
     vas = PCMVolumeTransformer(as_)
-    vas.volume = song.volume
+    vas.volume = max(min(song.volume, 1.5), 0.5)
     return vas
 
 
