@@ -13,6 +13,7 @@ songs = Table('songs', metadata,
               Column('used', Integer),
               Column('skipped', Integer),
               Column('shuffled', Integer),
+              # ToDo: Add Default Volume
               )
 
 log = Table('log', metadata,

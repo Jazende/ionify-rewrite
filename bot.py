@@ -15,6 +15,11 @@ import create_db
 import sqlalchemy
 
 
+# TODO : Temporary, verwijderen
+def vol(song_location):
+    return discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(song_location))
+
+
 def check_database():
     if not os.path.isfile(db_loc):
         engine = sqlalchemy.create_engine(db_loc)
@@ -28,8 +33,11 @@ class Ionify(discord.Client):
         self.sql_select_all_songs = sqlalchemy.sql.select([songs])
         self.image_list = []
         self.populate_image_list()
+        self.song_list = []
+        self.populate_song_list()
         self.jaz_debug = jaz_debug
         self.vc = None
+        self.voice_capable = False
         load_opus_library()
 
     async def on_ready(self):
@@ -39,6 +47,8 @@ class Ionify(discord.Client):
         voice_channel = self.get_channel(CHANNEL_VOICE)
         if isinstance(voice_channel, discord.VoiceChannel):
             self.vc = await self.get_channel(CHANNEL_VOICE).connect()
+            if self.vc:
+                self.voice_capable = True
         else:
             raise ValueError("CHANNEL_VOICE is not a VoiceChannel")
 
@@ -113,7 +123,10 @@ class Ionify(discord.Client):
 
     async def test_functionality(self, message):
         song = os.path.join(BOT_FOLDER_SONGS, 'aqua_barbie_girl.mp3')
-        self.vc.play(discord.FFmpegPCMAudio(song), after=lambda e: print('done', e))
+        audiosource = discord.FFmpegPCMAudio(song)
+        volume_audio = discord.PCMVolumeTransformer(audiosource)
+        volume_audio.volume = 2
+        self.vc.play(volume_audio, after=lambda e: print('done', e))
 
     async def song_random(self, message):
         print("Play random song")
@@ -185,7 +198,6 @@ class Ionify(discord.Client):
                 else:
                     await message.channel.send("Something went wrong downloading the file {}".format(name))
 
-    
     async def INSTANT_CIRCUS(self, message):
         print("!INSTANT CIRCUS")
         pass
@@ -215,6 +227,11 @@ class Ionify(discord.Client):
         pass
     
     async def play_song(self, message):
+        if self.voice_capable:
+            for song in self.song_list:
+                if message.content.startswith("!song {}".format(song.invoke)):
+                    audiosource = vol(song.file_loc)
+                    self.vc.play(audiosource, after=lambda e: print("done", e))
         print("!play_song")
         pass
 
@@ -225,6 +242,16 @@ class Ionify(discord.Client):
                 self.image_list.append(ImagesData(id_=image['id'], added=image['added'],
                                                   file_loc=image['file_loc'], used=image['used'],
                                                   invoke=image['invoke']))
+
+    def populate_song_list(self):
+        self.song_list = []
+        with database_connection(self.engine) as db_c:
+            for song in db_c.execute(sqlalchemy.sql.select([songs])):
+                self.song_list.append(SongsData(id_=song['id'], invoke=song['invoke'],
+                                                file_loc=song['file_loc'], artist=song['artist'],
+                                                name=song['name'], added=song['added'],
+                                                used=song['used'], skipped=song['skipped'],
+                                                shuffled=song['shuffled']))
 
 
 def main():
