@@ -71,7 +71,7 @@ class Ionify(discord.Client):
             
             if message.content.startswith("!song random"):          # TODO
                 await self.song_random(message)
-            elif message.content.startswith("!song playing"):          # TODO
+            elif message.content.startswith("!song playing"):          # TODO 
                 await self.song_playing(message)
             elif message.content.startswith("!song shuffle start"):          # TODO
                 await self.song_shuffle_start(message)
@@ -85,17 +85,17 @@ class Ionify(discord.Client):
                 await self.song_pause(message)
             elif message.content.startswith("!song resume"):
                 await self.song_resume(message)
-            elif message.content.startswith("!song volume"):          # TODO
+            elif message.content.startswith("!song volume"):
                 await self.song_volume(message)
             elif message.content.startswith("!song add"):       # <name> <link>          # TODO
                 await self.song_add(message)
-            elif message.content.startswith("!song queue"):          # TODO
+            elif message.content.startswith("!song queue"):          # TODO - te bekijken
                 await self.song_queue(message)
-            elif message.content.startswith("!song list update"):          # TODO
+            elif message.content.startswith("!song list update"):          # TODO - mogelijk niet nodig; opnemen in playing
                 await self.song_list_update(message)
-            elif message.content.startswith("!song list"):          # TODO
+            elif message.content.startswith("!song list"):          # TODO - mogelijk niet overnemen?
                 await self.songs_list(message)
-            elif message.content.startswith("!image add"):      # <name> <link>
+            elif message.content.startswith("!image add"):
                 await self.image_add(message)
             elif message.content.startswith("!INSTANT CIRCUS"):          # TODO
                 await self.INSTANT_CIRCUS(message)
@@ -162,6 +162,12 @@ class Ionify(discord.Client):
         self.play_audio(status=BotCommand.resume)
     
     async def song_volume(self, message):
+        # opties: 
+            # vaste waarde
+            # + 10%     TODO
+            # - 10%     TODO
+            # default   TODO
+            # set (default) TODO
         if self.vc.is_playing():
             new_volume = re.findall("!song volume ([\d\.]{1,4})$", str(message.content))
             print(message.content, new_volume)
@@ -252,14 +258,14 @@ class Ionify(discord.Client):
             self.audio_file_playing = {'file': vol_audio_source(song), 'info': song}
             self.vc.play(self.audio_file_playing['file'], after=lambda e: self.play_audio(error = e))
         elif status == BotCommand.shuffle:
-            pass
+            pass # TODO
             
             
         elif status == BotCommand.resume:
             if self.vc.is_paused():
                 self.vc.resume()
         elif status == BotCommand.circus_start:
-            pass
+            pass # TODO
         
 
     def populate_image_list(self): # empty, and insert all images from DB into image_list
