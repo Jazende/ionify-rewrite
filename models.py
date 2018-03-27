@@ -1,5 +1,6 @@
 from sqlalchemy import Table, Column, MetaData
 from sqlalchemy import Integer, String, Float, DateTime
+from dataclasses import QueueStatus, BotStatus, BotCommand
 
 metadata = MetaData()
 

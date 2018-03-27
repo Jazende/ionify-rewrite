@@ -1,6 +1,8 @@
 import os
 from cfg import BOT_FOLDER
 
+QUEUE_FETCH_DELAY = 5
+
 ERROR_NO_CONN = "No connection to Discord. Check network. If on windows, try bypass."
 PRINT_MESSAGE = 'Message from {0.author} in channel {0.channel}: {0.content}'
 

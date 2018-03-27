@@ -3,24 +3,14 @@ import re
 import aiohttp
 
 from discord import opus
-from discord import FFmpegPCMAudio
 from statics import BOT_FOLDER_SONGS
 from statics import BOT_FOLDER_IMAGES
-from discord import PCMVolumeTransformer
 from contextlib import contextmanager
 from ctypes.util import find_library
 
 CHANNEL_TEST = 383215871860015105
 REGEX_MATCH_IMAGE_ADD = re.compile("!image add \"(\S[a-zA-Z0-9_]*?\S)\" \"(.*?)\"")
 REGEX_FIND_IMAGE_EXT = re.compile(".*\w+/.+\.([\w\d]{1,5})\??.*")
-
-
-def vol_audio_source(song):
-    loc = os.path.join(BOT_FOLDER_SONGS, song.file_loc)
-    as_ = FFmpegPCMAudio(loc)
-    vas = PCMVolumeTransformer(as_)
-    vas.volume = max(min(song.volume, 1.5), 0.5)
-    return vas
 
 
 def regex_match(regex, input_):

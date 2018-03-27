@@ -1,6 +1,29 @@
+from enum import Enum
 from utils import regex_compile_image_invoke, database_connection
-from models import images
+from models import *
 from sqlalchemy import update
+
+
+class QueueStatus(Enum):
+    queued = 1
+    played = 2
+    skipped = 3
+
+
+class BotStatus(Enum):
+    stopped = 1
+    paused = 2
+    playing = 3
+    shuffle = 4
+
+    
+class BotCommand(Enum):
+    stop = 1
+    pause = 2
+    play = 3
+    shuffle = 4
+    resume = 5
+    circus = 6
 
 
 class SongsData:
@@ -19,7 +42,6 @@ class SongsData:
 
     def __repr__(self):
         return "Song: {}".format(self.name)
-
 
 class ImagesData:
     def __init__(self, added, file_loc, invoke, used, id_=None):
@@ -43,6 +65,15 @@ class ImagesData:
 
     def __repr__(self):
         return "({0.id_}, {0.invoke}, {0.used})".format(self)
+
+class QueueData:
+    def __init__(self, song, queue_status = QueueStatus.queued):
+        self.song = song
+        self.queue_status = queue_status
+        
+
+
+
 
 if __name__ == '__main__':
     from datetime import datetime
