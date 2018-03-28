@@ -13,3 +13,5 @@ CHANNEL_OFFTOPIC = 294536565240233994
 
 BOT_FOLDER_IMAGES = os.path.join(BOT_FOLDER, "images")
 BOT_FOLDER_SONGS = os.path.join(BOT_FOLDER, "songs")
+FILE_QUEUE_TRANSFER = os.path.join(BOT_FOLDER_SONGS, "queue.txt")
+FILE_COMMANDS_TRANSFER = os.path.join(BOT_FOLDER_SONGS, "commands.txt")

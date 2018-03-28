@@ -14,16 +14,17 @@ class BotStatus(Enum):
     stopped = 1
     paused = 2
     playing = 3
-    shuffle = 4
+    # shuffle = 4
 
     
 class BotCommand(Enum):
     stop = 1
     pause = 2
     play = 3
-    shuffle = 4
+    # shuffle = 4
     resume = 5
     circus = 6
+    skip = 7
 
 
 class SongsData:
@@ -41,7 +42,7 @@ class SongsData:
         self.volume = volume
 
     def __repr__(self):
-        return "Song: {}".format(self.name)
+        return "Song: {}".format(self.invoke)
 
 class ImagesData:
     def __init__(self, added, file_loc, invoke, used, id_=None):

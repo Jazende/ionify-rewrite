@@ -11,6 +11,8 @@ from datetime import datetime
 
 import os
 import re
+import random
+import asyncio
 import discord
 import create_db
 import sqlalchemy
@@ -21,7 +23,7 @@ def vol_audio_source(song): # Make volume controlled FFmpegPCMAudio from SongsDa
     print(loc)
     as_ = discord.FFmpegPCMAudio(loc)
     vas = discord.PCMVolumeTransformer(as_)
-    vas.volume = max(min(song.volume, 1.9), 0.1)
+    vas.volume = max(min(song.volume, 1.5), 0.5)
     return vas
 
 
@@ -30,22 +32,37 @@ def check_database(): # Checks if DB exists and calls "create_all_tables" if not
         engine = sqlalchemy.create_engine(db_loc)
         create_db.create_all_tables(engine)
 
+def check_files():
+    if not os.path.isfile(FILE_QUEUE_TRANSFER):
+        with open(FILE_QUEUE_TRANSFER, "w") as qt:
+            qt.write("")
+    if not os.path.isfile(FILE_COMMANDS_TRANSFER):
+        with open(FILE_COMMANDS_TRANSFER, "w") as qt:
+            qt.write("")
 
 class Ionify(discord.Client):
     def __init__(self, jaz_debug=False):
         super().__init__()
         self.engine = sqlalchemy.create_engine(db_loc)
         self.image_list = []
-        self.populate_image_list()
         self.song_list = []
+        self.populate_image_list()
         self.populate_song_list()
-        # self.queue_list = []
-        # self.populate_queue_list()
+        
         self.jaz_debug = jaz_debug
-        self.vc = None
         self.status = BotStatus.stopped
-        self.audio_file_playing = None
+        
+        self.vc = None
+        self.shuffle = False
         load_opus_library()
+        
+        
+        self.music_commands = asyncio.Queue()
+        self.music_queue = asyncio.Queue()
+        self.queue_reader = self.loop.create_task(self.loop_read_queue())
+        self.command_reader = self.loop.create_task(self.loop_read_commands())
+        self.music_commands_loop = self.loop.create_task(self.loop_bot_commands())
+        self.music_player = self.loop.create_task(self.loop_music_player())
 
     async def on_ready(self): # Joins VoiceChannel "CHANNEL_VOICE", goes offline if testing
         print("Logged in as {0}!".format(self.user))
@@ -71,46 +88,57 @@ class Ionify(discord.Client):
             
             if message.content.startswith("!song random"):          # TODO
                 await self.song_random(message)
+                
             elif message.content.startswith("!song playing"):          # TODO 
                 await self.song_playing(message)
-            elif message.content.startswith("!song shuffle start"):          # TODO
-                await self.song_shuffle_start(message)
-            elif message.content.startswith("!song shuffle stop"):          # TODO
-                await self.song_shuffle_stop(message)
+                
+            elif message.content.startswith("!toggle shuffle"):
+                if self.shuffle:
+                    self.shuffle = False
+                else:
+                    self.shuffle = True
+                    
+            elif message.content.startswith("!song shuffle start"):
+                self.shuffle = True
+                await self.music_commands.put(BotCommand.start)
+                
+            elif message.content.startswith("!song shuffle stop"):
+                self.shuffle = False
+                
             elif message.content.startswith("!song skip"):          # TODO
-                await self.song_skip(message)
+                self.vc.stop()
+                
             elif message.content.startswith("!song stop"):
-                await self.song_stop(message)
+                await self.music_commands.put(BotCommand.stop)
+                
             elif message.content.startswith("!song pause"):
-                await self.song_pause(message)
+                await self.music_commands.put(BotCommand.pause)
+                
             elif message.content.startswith("!song resume"):
-                await self.song_resume(message)
-            elif message.content.startswith("!song volume"):
-                await self.song_volume(message)
+                await self.music_commands.put(BotCommand.resume)
+                
+            elif message.content.startswith("!volume"):
+                # TODO: set default
+                if self.vc.is_playing():
+                    new_volume = re.findall("!volume ([\d\.]{1,4})$", str(message.content))
+                    print(message.content, new_volume)
+                    if not new_volume == None:
+                        self.vc.source.volume = float(new_volume[0])
+                
             elif message.content.startswith("!song add"):       # <name> <link>          # TODO
                 await self.song_add(message)
-            elif message.content.startswith("!song queue"):          # TODO - te bekijken
-                await self.song_queue(message)
-            elif message.content.startswith("!song list update"):          # TODO - mogelijk niet nodig; opnemen in playing
-                await self.song_list_update(message)
-            elif message.content.startswith("!song list"):          # TODO - mogelijk niet overnemen?
-                await self.songs_list(message)
+
             elif message.content.startswith("!image add"):
                 await self.image_add(message)
-            elif message.content.startswith("!INSTANT CIRCUS"):          # TODO
-                await self.INSTANT_CIRCUS(message)
-            elif message.content.startswith("!INSTANT STOP"):          # TODO
-                await self.INSTANT_STOP(message)
-            elif message.content.startswith("!monika text"):    # <text>          # TODO
-                await self.monika_text(message)
-            elif message.content.startswith("!monika online"):          # TODO
-                await self.monika_online(message)
-            elif message.content.startswith("!monika offline"):          # TODO
-                await self.monika_offline(message)
-            elif message.content.startswith("!monika playing"):          # TODO
-                await self.monika_playing(message)
-            elif message.content.startswith("!monika commands"):          # TODO
-                await self.monika_commands(message)
+                
+            # elif message.content.startswith("!INSTANT CIRCUS"):
+            # elif message.content.startswith("!INSTANT STOP"):
+            # elif message.content.startswith("!monika text"): # <text>
+            # elif message.content.startswith("!monika online"):
+            # elif message.content.startswith("!monika offline"):
+            # elif message.content.startswith("!monika playing"):
+            # elif message.content.startswith("!monika commands"):
+            
             elif message.content.startswith("!song "):
                 await self.play_song(message)
             elif message.content.startswith("!test"):              # todo remove when complete
@@ -132,63 +160,8 @@ class Ionify(discord.Client):
         volume_audio.volume = 2
         self.vc.play(volume_audio, after=lambda e: print('done', e))
 
-    async def song_random(self, message):
-        print("Play random song")
-        pass
-
-    async def song_playing(self, message):
-        print("!song playing")
-        pass
-
-    async def song_shuffle_start(self, message):
-        print("!song shuffle start")
-        pass
-
-    async def song_shuffle_stop(self, message):
-        print("!song shuffle stop")
-        pass
-
-    async def song_skip(self, message):
-        print("!song skip")
-        pass
-    
-    async def song_stop(self, message):
-        self.play_audio(status=BotCommand.stop)
-    
-    async def song_pause(self, message):
-        self.play_audio(status=BotCommand.pause)
-    
-    async def song_resume(self, message):
-        self.play_audio(status=BotCommand.resume)
-    
-    async def song_volume(self, message):
-        # opties: 
-            # vaste waarde
-            # + 10%     TODO
-            # - 10%     TODO
-            # default   TODO
-            # set (default) TODO
-        if self.vc.is_playing():
-            new_volume = re.findall("!song volume ([\d\.]{1,4})$", str(message.content))
-            print(message.content, new_volume)
-            if not new_volume == None:
-                self.vc.source.volume = float(new_volume[0])
-        pass
-    
     async def song_add(self, message):
         print("!song add <name> <link>")
-        pass
-    
-    async def song_queue(self, message):
-        print("!song queue")
-        pass
-    
-    async def songs_list(self, message):
-        print("!song list")
-        pass
-    
-    async def song_list_update(self, message):
-        print("!song list update")
         pass
     
     async def image_add(self, message): # download image, add image to image_list and DB
@@ -209,64 +182,99 @@ class Ionify(discord.Client):
                 else:
                     await message.channel.send("Something went wrong downloading the file {}".format(name))
 
-    async def INSTANT_CIRCUS(self, message):
-        print("!INSTANT CIRCUS")
-        pass
-    
-    async def INSTANT_STOP(self, message):
-        print("!INSTANT STOP")
-        pass
-    
-    async def monika_text(self, message):
-        print("!monika text <text>")
-        pass
-    
-    async def monika_online(self, message):
-        print("!monika online")
-        pass
-    
-    async def monika_offline(self, message):
-        print("!monika offline")
-        pass
-    
-    async def monika_playing(self, message):
-        print("!monika playing")
-        pass
-    
-    async def monika_commands(self, message):
-        print("!monika commands")
-        pass
-    
     async def play_song(self, message):
         for song in self.song_list:
             if message.content.startswith("!song {}".format(song.invoke)):
-                self.play_audio(BotCommand.play, song)
-        
-    def play_audio(self, status = BotCommand.stop, song=None, error=None):
-        if not error == None:
-            self.vc.stop()
-            self.status = BotStatus.stopped
-        elif status == BotCommand.stop:
-            if self.vc.is_playing():
+                print("matching", song)
+                try:
+                    await self.music_commands.put(BotCommand.play)
+                    await self.music_queue.put(song)
+                except BaseException as e:
+                    print(e)
+                print("done matching")
+
+    async def loop_read_queue(self):
+        await self.wait_until_ready()
+        while True:
+            await asyncio.sleep(10)
+            pass
+            
+    async def loop_read_commands(self):
+        await self.wait_until_ready()
+        while True:
+            with open(FILE_COMMANDS_TRANSFER, "r") as f:
+                cmd = f.readline().strip()
+            if cmd == "1":
+                await self.music_commands.put(BotCommand.stop)
+                await asyncio.sleep(1)
+            elif cmd == "2":
+                await self.music_commands.put(BotCommand.pause)
+                await asyncio.sleep(1)
+            elif cmd == "3":
+                await self.music_commands.put(BotCommand.play)
+                await asyncio.sleep(1)
+            # elif cmd == "4":
+                # await self.music_commands.put(BotCommand.shuffle)
+                # await asyncio.sleep(1)
+            elif cmd == "5":
+                await self.music_commands.put(BotCommand.resume)
+            elif cmd == "6":
+                await self.music_commands.put(BotCommand.circus)
+                await asyncio.sleep(1)
+            elif cmd == "7":
                 self.vc.stop()
-        elif status == BotCommand.pause:
-            if self.vc.is_playing():
-                self.vc.pause()
-        elif status == BotCommand.play:
-            if song == None:
-                raise ValueError("Didn't get a SongsData object for play_audio")
-            self.audio_file_playing = {'file': vol_audio_source(song), 'info': song}
-            self.vc.play(self.audio_file_playing['file'], after=lambda e: self.play_audio(error = e))
-        elif status == BotCommand.shuffle:
-            pass # TODO
-            
-            
-        elif status == BotCommand.resume:
-            if self.vc.is_paused():
-                self.vc.resume()
-        elif status == BotCommand.circus_start:
-            pass # TODO
-        
+                await asyncio.sleep(1)
+            await asyncio.sleep(0.1)
+                
+    async def loop_bot_commands(self):
+        await self.wait_until_ready()
+        while True:
+            ## TODO lees songs\botcommands.txt
+            try:
+                data = self.music_commands.get_nowait()
+            except asyncio.QueueEmpty as qe:
+                await asyncio.sleep(0.5)
+            except BaseException as be:
+                print(be)
+            else:
+                self.status = data
+                print(self.status)
+                self.music_commands.task_done()
+            await asyncio.sleep(1)
+                
+    async def loop_music_player(self):
+        await self.wait_until_ready()
+        while True:
+            if self.status == BotCommand.pause:
+                if self.vc.is_playing():
+                    self.vc.pause()
+            elif self.status == BotCommand.resume:
+                if self.vc.is_paused():
+                    self.vc.resume()
+                    self.status = BotCommand.play
+            elif self.status == BotCommand.stop:
+                if self.vc.is_paused() or self.vc.is_playing():
+                    self.vc.stop()
+            elif self.status == BotCommand.play:
+                if not self.vc.is_playing() and not self.vc.is_paused():
+                    if self.shuffle:
+                        song = random.choice(self.song_list)
+                        self.vc.play(vol_audio_source(song))
+                    else:
+                        try:
+                            song = self.music_queue.get_nowait()
+                        except asyncio.QueueEmpty as qe:
+                            if not self.shuffle:
+                                self.status == BotCommand.stop()
+                        else:
+                            self.music_queue.task_done()
+                            print("playing ", song)
+                            self.vc.play(vol_audio_source(song))
+                elif not self.vc.is_playing() and self.vc.is_paused():
+                    self.vc.resume()
+                    self.status = BotCommand.play
+            await asyncio.sleep(0.5)
+
 
     def populate_image_list(self): # empty, and insert all images from DB into image_list
         self.image_list = []
@@ -297,4 +305,5 @@ def main():
 
 if __name__ == '__main__':
     check_database()
+    check_files()
     main()
